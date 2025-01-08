@@ -8,88 +8,42 @@ Steps:
 5. Saves/updates data in a CSV file.
 6. Optionally prints the DataFrame.
 """
-import os
 from datetime import datetime
 from alpaca.data.requests import CryptoBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.data.historical import CryptoHistoricalDataClient
 
-# Inicializa la conexión con Alpaca
-client = CryptoHistoricalDataClient("",  # API KEY
-                                    "")  # Secret API KEY
-
-try:
-    print("Please enter the numerical date from which you want to request the data YYYY/MM/DD")
-    initial_year = int(input("Year (YYYY); ").strip() or 2024)
-    initial_month = int(input("Month (MM); ").strip() or 12)
-    initial_day = int(input("Day (DD); "). strip() or 1)
-except ValueError:
-    print("Please enter valid numbers")
-
-try:
-    print("Please enter the numerical date for the end of the data request YYYY/MM/DD")
-    final_year = int(input("Year (YYYY); ").strip() or 2024)
-    final_month = int(input("Month (MM); ").strip() or 12)
-    final_day = int(input("Day (DD); "). strip() or 31)
-except ValueError:
-    print("Please enter valid numbers")
-
-# Configure the request parameters
-request_params = CryptoBarsRequest(
-    symbol_or_symbols=["BTC/USD"],
-    timeframe=TimeFrame.Day,
-    start=datetime(initial_year, initial_month, initial_day),
-    end=datetime(final_year, final_month, final_day)
-)
-
-# Makes the request to the Alpaca API and stores the response in `btc_bars`
-try:
-    BTC_BARS = client.get_crypto_bars(request_params)
-except (ConnectionError, TimeoutError, ValueError) as e:
-    print(f"Error obtaining the data: {e}")
-    BTC_BARS = None
-
-
-def save_update_csv(dataframe, archive):
+def fetch_and_save_data(api_key, api_secret, start_date, end_date):
     """
-    Saves or updates the CSV file with the DataFrame data.
-    If the file exists, it replaces it with the new content.
+    Fetch historical Bitcoin data from Alpaca API and save it to a CSV file.
+    Returns a dictionary with success or error message.
     """
-    if os.path.exists(archive):
-        os.remove(archive)  # Deletes the existing archive
-        print(f"Data of {archive} eliminated to upgrade.")
-    else:
-        print(
-            f"No archive '{archive}' to elimanate, creating a new one with the data.")
-    dataframe.to_csv(archive, index=False)  # Saves the new data in a new archive with the same name
-    print(f"Archive {archive} created/updated with new data.")
+    # Initialize Alpaca API connection
+    client = CryptoHistoricalDataClient(api_key, api_secret)
+    try:
+        # Parse the start and end dates
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+        end = datetime.strptime(end_date, "%Y-%m-%d")
+    except ValueError:
+        return {"error": "Invalid date format."}
 
+    # Configure the request parameters
+    request_params = CryptoBarsRequest(
+        symbol_or_symbols=["BTC/USD"],
+        timeframe=TimeFrame.Day,
+        start=start,
+        end=end,
+    )
 
-if BTC_BARS is not None:
-    # Process the DataFrame
-    btc_df = BTC_BARS.df.copy()
-
-    # Reset the index to include the `timestamp` as a column
-    btc_df.reset_index(inplace=True)
-    # Add percentage change column
-    btc_df['percentage_change'] = (
-        (btc_df['close'] - btc_df['open']) / btc_df['open']) * 100
-
-    # Name of the CSV
-    ARCHIVO_CVS = "bitcoin_data.csv"
-
-    # Llamada a la función para guardar o actualizar
-    save_update_csv(btc_df, ARCHIVO_CVS)
-
-else:
-    print("Could not get data to save.")
-
-# Ask the user if they want to display the DataFrame
-if btc_df is not None:
-    print_dataframe = input("Do you want to display th DataFrame? Y/N ")
-    if print_dataframe == "Y" or "y":
-        print(btc_df)
-    else:
-        pass
-else:
-    pass
+    try:
+        # Fetch the data
+        btc_bars = client.get_crypto_bars(request_params)
+        btc_df = btc_bars.df.copy()
+        btc_df.reset_index(inplace=True)
+        btc_df['percentage_change'] = (
+            (btc_df['close'] - btc_df['open']) / btc_df['open']) * 100
+        # Save the data to a CSV file
+        btc_df.to_csv("bitcoin_data.csv", index=False)
+        return {"success": "Data fetched and saved successfully."}
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        return {"error": f"Error fetching data: {e}"}
