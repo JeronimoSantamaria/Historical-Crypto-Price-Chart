@@ -1,17 +1,23 @@
 '''Transform a CSV file into a list of ints and floats and plot the data using matplotlib.'''
 
+import os
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def create_plot():
+
+# Define the directory path as a constant
+SAVE_DIR = 'data'
+
+def create_plot(asset):
     """
-    Create a plot from the Bitcoin data CSV file and save it as an image.
+    Create a plot from the cryptocurrency data CSV file and save it as an image.
     Returns the path to the saved plot image.
     """
     try:
-        # Read the CSV file
-        btc_df = pd.read_csv("bitcoin_data.csv")
+        # Read the CSV file with a fixed name
+        csv_file_path = os.path.join(SAVE_DIR, "crypto_data.csv")
+        btc_df = pd.read_csv(csv_file_path)
         timestamp = pd.to_datetime(btc_df['timestamp']).astype(int) // 10**9
         dates = [datetime.fromtimestamp(ts) for ts in timestamp]
         close = btc_df['close'].astype(float).tolist()
@@ -20,7 +26,7 @@ def create_plot():
         plt.figure(figsize=(10, 6))
         plt.plot(dates, close, marker='o', linestyle='-',
                  color='blue', label='Closing prices (USD)')
-        plt.title('Bitcoin Price Evolution', fontsize=16)
+        plt.title(f'{asset} Price Evolution', fontsize=16)
         plt.xlabel('Date', fontsize=12)
         plt.ylabel('Closing prices (USD)', fontsize=12)
         plt.xticks(rotation=45)
