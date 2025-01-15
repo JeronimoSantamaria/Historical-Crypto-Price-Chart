@@ -3,12 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fetch Bitcoin Data</title>
+    <title>Cryptocurrency Data Fetcher</title>
+    <script>
+        async function fetchAssets() {
+            const apiKey = document.getElementById('api_key').value;
+            const apiSecret = document.getElementById('api_secret').value;
+            const response = await fetch(`/assets?api_key=${apiKey}&api_secret=${apiSecret}`);
+            const data = await response.json();
+            const assetSelect = document.getElementById('asset');
+            assetSelect.innerHTML = '';
+            data.symbols.forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                option.textContent = symbol;
+                assetSelect.appendChild(option);
+            });
+        }
+    </script>
 </head>
 <body>
-    <h1>Fetch Historical Bitcoin Data</h1>
+    <h1>Cryptocurrency Data Fetcher</h1>
     <!-- Form to collect API credentials and date range -->
-    <form method="POST">
+    <form method="POST" action="/">
         <label for="api_key">API Key:</label>
         <input type="text" id="api_key" name="api_key" required><br><br>
         
@@ -21,6 +37,12 @@
         <label for="end_date">End Date (YYYY-MM-DD):</label>
         <input type="date" id="end_date" name="end_date" required><br><br>
         
+        <label for="asset">Select Asset:</label>
+        <select id="asset" name="asset" required>
+            <!-- Options will be populated by JavaScript -->
+        </select><br><br>
+        
+        <button type="button" onclick="fetchAssets()">Fetch Assets</button><br><br>
         <button type="submit">Fetch Data</button>
     </form>
 </body>

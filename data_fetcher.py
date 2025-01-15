@@ -8,14 +8,20 @@ Steps:
 5. Saves/updates data in a CSV file.
 6. Optionally prints the DataFrame.
 """
+
+import os
 from datetime import datetime
 from alpaca.data.requests import CryptoBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.data.historical import CryptoHistoricalDataClient
 
-def fetch_and_save_data(api_key, api_secret, start_date, end_date):
+
+# Define the directory path as a constant
+SAVE_DIR = 'data'
+
+def fetch_and_save_data(api_key, api_secret, start_date, end_date, asset):
     """
-    Fetch historical Bitcoin data from Alpaca API and save it to a CSV file.
+    Fetch historical cryptocurrency data from Alpaca API and save it to a CSV file.
     Returns a dictionary with success or error message.
     """
     # Initialize Alpaca API connection
@@ -29,7 +35,7 @@ def fetch_and_save_data(api_key, api_secret, start_date, end_date):
 
     # Configure the request parameters
     request_params = CryptoBarsRequest(
-        symbol_or_symbols=["BTC/USD"],
+        symbol_or_symbols=[asset],
         timeframe=TimeFrame.Day,
         start=start,
         end=end,
@@ -40,10 +46,19 @@ def fetch_and_save_data(api_key, api_secret, start_date, end_date):
         btc_bars = client.get_crypto_bars(request_params)
         btc_df = btc_bars.df.copy()
         btc_df.reset_index(inplace=True)
-        btc_df['percentage_change'] = (
-            (btc_df['close'] - btc_df['open']) / btc_df['open']) * 100
-        # Save the data to a CSV file
-        btc_df.to_csv("bitcoin_data.csv", index=False)
+
+        # Ensure the directory exists
+        os.makedirs(SAVE_DIR, exist_ok=True)
+
+        # Define the file path with a fixed name
+        file_path = os.path.join(SAVE_DIR, "crypto_data.csv")
+
+        # Delete the old CSV file if it exists
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Save the data to a new CSV file
+        btc_df.to_csv(file_path, index=False)
         return {"success": "Data fetched and saved successfully."}
-    except (ConnectionError, TimeoutError, ValueError) as e:
+    except (ConnectionError, TimeoutError, ValueError, OSError) as e:
         return {"error": f"Error fetching data: {e}"}

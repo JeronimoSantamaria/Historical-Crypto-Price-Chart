@@ -4,4 +4,4 @@ __pycache__/
 .vscode/
 .venv/
 static/plot.png
-bitcoin_data.csv
+data/crypto_data.csv
